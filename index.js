@@ -23,17 +23,18 @@ const rooms = {};
 /**
  * Connect a socket to a specified room
  * @param socket A connected socket.io socket
- * @param room An object that represents a room from the 'rooms' instance variable object
+ * @param room Room name
  */
 const joinRoom = (socket, room) => {
-  if (room.sockets.length >= room.maxPlayers) {
+  let myRoom = rooms[room];
+  if (myRoom.sockets.length >= myRoom.maxPlayers) {
     console.log("Room is full");
   } else {
-    room.sockets.push(socket);
-    socket.join(room.id, () => {
+    myRoom.sockets.push(socket);
+    socket.join(myRoom.id, () => {
       // store the room id in the socket for future use
-      socket.roomId = room.id;
-      console.log(socket.id, "joined", room.id);
+      socket.myRoom = myRoom.id;
+      console.log(socket.id, "joined", myRoom.id);
     });
   }
 };
@@ -69,14 +70,14 @@ io.on("connection", (socket) => {
   socket.id = randomUUID();
   console.log(`User connected with ID: ${socket.id}`);
 
-  socket.on("ready", () => {
-    console.log(socket.id, "is ready");
-    const room = rooms[socket.roomId];
+  // socket.on("ready", () => {
+  //   console.log(socket.id, "is ready");
+  //   const room = rooms[socket.roomId];
 
-    // starting out with only 2 players but learn how to add custom amoutn
-    if (room.sockets.length == 2) {
-    }
-  });
+  //   // starting out with only 2 players but learn how to add custom amoutn
+  //   if (room.sockets.length == 2) {
+  //   }
+  // });
 
   socket.on("join_room", (data) => {
     console.log("join room data", data);
@@ -85,15 +86,14 @@ io.on("connection", (socket) => {
 
   socket.on("create_room", (data) => {
     const room = {
-      id: randomUUID(),
-      name: data.roomName,
+      id: data,
       sockets: [],
-      maxPlayers: data.maxPlayers,
+      maxPlayers: 2,
     };
     rooms[room.id] = room;
-    console.log(`Creating room: ${room.name} with ID: ${room.id}`);
+    console.log(`Creating room with ID: ${room.id}`);
 
-    joinRoom(socket, room);
+    joinRoom(socket, room.id);
   });
 
   socket.on("disconnect", () => {
